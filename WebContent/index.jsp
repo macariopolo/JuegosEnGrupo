@@ -42,6 +42,7 @@ User user=(User) ServletActionContext.getRequest().getSession().getAttribute("us
 		</tr>
 		<tr>
 			<td id="zonaTablero">
+				<div id="mensajesTablero"></div>
 			</td>
 			<td id="zonaJugadores">
 			</td>
@@ -56,6 +57,8 @@ var formLogout = document.getElementById("logoutForm");
 
 var textAreaMensajes=document.getElementById("textareaMensajes");
 var zonaTablero = document.getElementById("zonaTablero");
+var mensajesTablero=document.getElementById("mensajesTablero");
+
 var zonaJugadores = document.getElementById("zonaJugadores");
 
 var idUser;
@@ -73,13 +76,22 @@ function cargarSocket(jsmLoginMessage) {
 	}
 	socket.onmessage = function(event) {
 		var jsm=JSON.parse(event.data);
-		if (jsm.type=="LoginMessageAnnouncement") {
+		if (jsm.type=="ErrorMessage") {
+			alert(jsm.text);
+		} else if (jsm.type=="LoginMessageAnnouncement") {
 			showJugador(jsm.email);
 		} else if (jsm.type=="LogoutMessageAnnouncement") {
 			removeJugador(jsm.email);
-		} else {
-			showMensaje(jsm.type);
-		}
+		} else if (jsm.type=="TresEnRayaWaitingMessage") {
+			mensajesTablero.innerHTML="Esperando a que llegue otro jugador";
+		} else if (jsm.type=="TresEnRayaBoardMessage") {
+			var oponente=jsm.player1;
+			if (formLogout["email"].value==oponente)
+				oponente=jsm.player2;
+			mensajesTablero.innerHTML="Oponente: " + oponente + "; turno de: " + jsm.userWithTurn;
+			game.show(jsm.squares);
+		} 
+		showMensaje(jsm.type);
 	}
 	socket.onclose = function(event) {
 		showMensaje("Websocket cerrado (readyState=" + this.readyState + ")");
@@ -87,10 +99,21 @@ function cargarSocket(jsmLoginMessage) {
 }
 
 function showJugador(email) {
+	showMensaje("Ha llegado " + email);
 	var btnJugador=document.createElement("input");
 	btnJugador.setAttribute("type", "button");
 	btnJugador.setAttribute("value", email);
 	zonaJugadores.appendChild(btnJugador);
+}
+
+function removeJugador(email) {
+	for (var i=0; i<zonaJugadores.childNodes.length; i++) {
+		var btn=zonaJugadores.childNodes[i];
+		if (btn.value==email) {
+			zonaJugadores.removeChild(zonaJugadores.childNodes[i]);
+			return;
+		}
+	}
 }
 
 function showMensaje(msj) {
@@ -113,7 +136,7 @@ function joinGame(idGame) {
 		return;
 	}
 	game.join();
-	game.show();
+	game.show(null);
 }
 
 /***/
@@ -191,26 +214,32 @@ function TresEnRaya(idUser) {
 	}
 }
 
-TresEnRaya.prototype.show = function() {
+TresEnRaya.prototype.show = function(ristra) {
 	while (zonaTablero.firstChild) {
 		zonaTablero.removeChild(zonaTablero.firstChild);
 	}
 	var tabla=document.createElement("table");
+	var cont=0;
 	for (var fila=0; fila<3; fila++) {
 		var tRow=document.createElement("tr");
 		tabla.appendChild(tRow);
 		for (var col=0; col<3; col++) {
 			var casilla=this.casillas[fila][col];
 			var tCelda=document.createElement("td");
-			var btnCastilla=document.createElement("input");
-			btnCastilla.setAttribute("type", "button");
-			btnCastilla.setAttribute("value", " ");
-			btnCastilla.setAttribute("onclick", "game.enviarMovimiento(" + fila + ", " + col + ")");
-			tCelda.appendChild(btnCastilla);
+			var btnCasilla=document.createElement("input");
+			btnCasilla.setAttribute("type", "button");
+			btnCasilla.setAttribute("value", " ");
+			btnCasilla.setAttribute("onclick", "game.enviarMovimiento(" + fila + ", " + col + ")");
+			if (ristra!=null) {
+				btnCasilla.setAttribute("value", ristra[cont]);
+			}
+			tCelda.appendChild(btnCasilla);
 			tRow.appendChild(tCelda);
+			cont++;
 		}
 	}
 	zonaTablero.appendChild(tabla);
+	zonaTablero.appendChild(mensajesTablero);
 }
 
 function Casilla(idPropietario) {
@@ -324,6 +353,9 @@ function desconectar() {
 				socket.close();
 				while (zonaTablero.firstChild) {
 					zonaTablero.removeChild(zonaTablero.firstChild);
+				}
+				while (zonaJugadores.firstChild) {
+					zonaJugadores.removeChild(zonaJugadores.firstChild);
 				}
 			} else {
 				var text=JSON.parse(resultado).text;

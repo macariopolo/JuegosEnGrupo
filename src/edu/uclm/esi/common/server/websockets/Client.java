@@ -1,7 +1,10 @@
 package edu.uclm.esi.common.server.websockets;
 
+import java.io.IOException;
+
 import javax.websocket.Session;
 
+import edu.uclm.esi.common.server.domain.Manager;
 import edu.uclm.esi.common.server.domain.User;
 
 public class Client {
@@ -31,7 +34,23 @@ public class Client {
 			
 			@Override
 			public void run() {
-				session.getAsyncRemote().sendText(msg);
+				try {
+					session.getAsyncRemote().sendText(msg);
+				}
+				catch (Exception e) {
+					try {
+						Thread.sleep(1000);
+						session.getAsyncRemote().sendText(msg);
+					}
+					catch(Exception e2) {
+						try {
+							Manager.get().remove(user);
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+					}
+				}
 			}
 		}).start();
 	}
