@@ -205,13 +205,6 @@ TresEnRaya.constructor=Game;
 function TresEnRaya(idUser) {
 	this.datosPartida.idGame=1;
 	this.datosPartida.idUser=idUser;
-	this.casillas=new Array();
-	for (var fila=0; fila<3; fila++) {
-		this.casillas[fila]=new Array();
-		for (var col=0; col<3; col++) {
-			this.casillas[fila][col]=new Casilla("-1");
-		}
-	}
 }
 
 TresEnRaya.prototype.show = function(ristra) {
@@ -224,7 +217,6 @@ TresEnRaya.prototype.show = function(ristra) {
 		var tRow=document.createElement("tr");
 		tabla.appendChild(tRow);
 		for (var col=0; col<3; col++) {
-			var casilla=this.casillas[fila][col];
 			var tCelda=document.createElement("td");
 			var btnCasilla=document.createElement("input");
 			btnCasilla.setAttribute("type", "button");
@@ -240,10 +232,6 @@ TresEnRaya.prototype.show = function(ristra) {
 	}
 	zonaTablero.appendChild(tabla);
 	zonaTablero.appendChild(mensajesTablero);
-}
-
-function Casilla(idPropietario) {
-	this.idPropietario=idPropietario;
 }
 
 /***/
