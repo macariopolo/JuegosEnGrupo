@@ -12,6 +12,8 @@ public abstract class Sender {
 			return new GWTSender();
 		else if (userType.equals(JSONMessage.USER_WEB))
 			return new GWTSender();
+		else if (userType.equals("USER_TEST"))
+			return new TestSender();
 		return null;
 	}
 
